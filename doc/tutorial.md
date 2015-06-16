@@ -37,12 +37,10 @@ Do the same stuff in container 2, show which processes are visible where
    sudo unshare -p -m -f /container/1/sh 
    ```
 3. Chroot and mount /proc
-
     ```sh
     chroot /container/1; mount -t proc  proc /proc  
     ```
 4. List mounts in root and container namespace
-
     ```sh
     ls /proc in new namespace  
     ls /container/1/proc/ should be empty  
