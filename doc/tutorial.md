@@ -1,17 +1,17 @@
-# PID and mount namespaces
+# Kernel features for container virtualization and privilege separation
+
+## PID and mount namespaces
 
 ## Prepare a busybox environment  
-`mkdir -p /container/{1,2}`  
-`sudo chmod a+w /container/{1,2}`  
-`cd /container/`  
-`sudo busybox --install 1; sudo busybox --install 2`  
-`mkdir {1,2}/proc`  
+`./create-busybox.sh`
 
 ## Show PID namespaces  
 Still old /proc mount  
-`sudo unshare -p -f /container/1/sh`  
-`ps w`  
-`cd /proc/self; pwd -P`` 
+```sh
+sudo unshare -p -f /container/1/sh
+ps w
+cd /proc/self; pwd -P
+```
 
 Show process in root namespace  
 `ps -q <PID in root ns>  
@@ -21,7 +21,7 @@ Show process in root namespace
 `mount -t proc  proc /proc`  
 `ps w`  
 
-## Do the same stuff in container 2, show which processes are visible where  
+Do the same stuff in container 2, show which processes are visible where  
 
 ## Add mount namespaces  
 1. Make sure / is mounted private:  
@@ -35,12 +35,13 @@ Show process in root namespace
 `ls /container/1/proc/` should be empty  
 5. Example with shared root mount  
 
-## Capabilities
+
+# Capabilities
 
 * restrict access to several permission (not dependent on implementation)
 * similar to permissions on Android or iOS
 
-### Example for Network Admin Capability
+# Example for Network Admin Capability
 
 We will shoe that the root user in a docker container can not bring its network device down
 1. Start docker  
@@ -70,7 +71,11 @@ RTNETLINK answers: Operation not permitted
 -> `./capsh --keep=1 --uid=1000 --caps=all+eip  -- /usr/bin/touch /var/foo`
 --> should work, but does not, strange...
 
-##. seccomp filtering
+## Tools
+* pscap gives a good overview of processes and their current capabilites
+* filecap list all files with special capabilities
+
+# seccomp
 ### Strict mode
 Filter all syscalls, except for read, write, \_exit and sigreturn  
 
@@ -93,7 +98,6 @@ SC_ALLOW(getpid),
 SC_ALLOW(gettimeofday),
 ...
 '''
-
 
 TODO Usernamespaces and capabilities
 TODO Example with network namespace and veth dev/special routing of packets from there
@@ -164,6 +168,31 @@ nsenter -t $ExecMainPID -m
 ls /home /dev /tmp
 '''
 
+## Other examples of containers in applications
+
+# Chrom(e/ium)
+* each renderer of a web page is put in its own sandbox
+* reduces attack surface to system
+* user namespaces
+* seccomp-bpf 
+
+# Firefox
+* same as for Chrome, but no seperate processes by default (switch on Electrolysis)
+
+# Gnome Sandbox
+* provide a sandbox for each process
+* mount namespace, only required system parts and dependencies are mounted
+* net namespace allows network filtering/routing for each app
+* (k)dbus proxy filtering
+-> a lot like iOS/Android
+
+# lxc
+* all mentioned features configurable
+
+# SELinux
+* can be combined with all mentioned separation methods
+* used with Docker on Centos/RHEL
+* proposal: talk about Docker security and SELinux
 
 ## TODO
 1. Wrapper for capsetp
