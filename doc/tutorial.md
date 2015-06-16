@@ -5,7 +5,7 @@
 1. Prepare a busybox environment  
 
     ```sh
-    ./create-busybox.sh`
+    ./create-busybox.sh
     ```
 
 2. Show PID namespaces  
