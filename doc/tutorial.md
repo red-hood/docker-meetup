@@ -257,6 +257,7 @@ See file 'heat.service' in the repository. Needed system calls can be found by s
     systemctl start heat.service
     ```
 4. Enter mount namespace of pid
+
     ```sh
     eval `systemctl show -p ExecMainPID heat.service`
     nsenter -t $ExecMainPID -m
