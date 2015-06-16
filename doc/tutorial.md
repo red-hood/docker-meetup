@@ -65,7 +65,8 @@ Do the same stuff in container 2, show which processes are visible where
 
 ## Example for Network Admin Capability in Docker
 
-We will show that the root user in a docker container can not bring its network device down.
+* We will show that the root user in a docker container can not bring its network device down.
+* no limit to single syscall, but messages on netlink socket (capabilities is function, not implementation oriented)
 
 1. Start docker container (Debian)
 
@@ -76,7 +77,7 @@ We will show that the root user in a docker container can not bring its network 
 
     ```sh
     ip l s eth0 down
-    -> `RTNETLINK answers: Operation not permitted`
+    -> RTNETLINK answers: Operation not permitted
     ```
 3. Print current capabilities
 
@@ -86,8 +87,6 @@ We will show that the root user in a docker container can not bring its network 
     ```
 4. Set capabilities for docker container
 TODO
-NB no limit to single syscall, but messages on netlink socket
-
 
 ## Capabilities w/o Docker
 
@@ -144,8 +143,8 @@ SC_ALLOW(gettimeofday),
 ...
 ```
 
-TODO User Namespaces and capabilities
-TODO Example with network namespace and veth dev/special routing of packets from there
+* TODO User Namespaces and capabilities
+* TODO Example with network namespace and veth dev/special routing of packets from there
 
 ## Cgroups
 * allow to limit resource usage for groups of processes attached to a cgroup
