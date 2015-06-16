@@ -26,5 +26,4 @@ ProtectSystem=full
 ProtectHome=true
 
 # filter required system calls for dd
-SystemCallFilter=access arch_prctl brk close dup2 execve fstat gettid lseek mmap mprotect munmap open read rt_sigaction rt_sigprocmask rt_sigreturn tgkill write
-SystemCallErrorNumber=EACCES
+SystemCallFilter=access arch_prctl brk close dup2 execve fstat gettid lseek mmap mprotect munmap open read rt_sigaction rt_sigprocmask rt_sigreturn tgkill write getrlimit
