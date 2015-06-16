@@ -97,23 +97,26 @@ TODO
 * explain securebits
 * capsh forks bash with a limited set of capabilities
 
+
+### Example: remove cap_net_admin for root, grant for user
 1. Show different output for root and normal user, man page
 2. Remove cap_net_admin capability for root user
 
     ```sh
-    capsh --secbits=1 --caps=all,cap_net_admin-eip --
+    capsh --secbits=63  --caps='all=eip cap_net_admin-eip' --
     ip l s eth0 up
     -> RTNETLINK answers: Operation not permitted
     ```
+NB capability can be regained by executing a file that has cap_net_admin set in its permissive set. Drop capability from bounding set to prevent this.
 
 3. Grant normal users cap_net_admin
-* KEEP_CAPS works only once -> have to execve() iproute2 directly
-* we use a modified version of capsh that executes the last argument directly
 
      ```sh
-    ./capsh --keep=1 --uid=1000 --caps=all+eip  -- /usr/bin/touch /var/foo
+    ./capsh --secbits=63  --caps='all+eip' --uid=1000 -- `which ip` l s eth0 up
     --> should work, but does not, strange...
     ```
+
+### Example: nc as user litstens on port 80
 
 ## useful Tools (libcap-ng)
 * pscap gives a good overview of processes and their current capabilites
