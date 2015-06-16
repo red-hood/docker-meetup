@@ -73,11 +73,13 @@ We will show that the root user in a docker container can not bring its network 
     docker run -t -i debian:jessie /bin/bash  
     ```
 2. Try to bring eth0 down 
+
     ```sh
     ip l s eth0 down
     -> `RTNETLINK answers: Operation not permitted`
     ```
 3. Print current capabilities
+
     ```sh
     capsh --print
     -> cap_net_admin missing in Current set, therefore no access to network management functions 
@@ -133,14 +135,14 @@ Filter all syscalls, except for read, write, \_exit and sigreturn
 
 Examples can be found in ssh source code, eg:
 
-'''
+```
 ...
 SC_DENY(open, EACCES),
 SC_DENY(stat, EACCES),
 SC_ALLOW(getpid),
 SC_ALLOW(gettimeofday),
 ...
-'''
+```
 
 TODO User Namespaces and capabilities
 TODO Example with network namespace and veth dev/special routing of packets from there
@@ -246,25 +248,31 @@ htop should show both tasks started first with 40%, the new one with about ~20% 
 1. Create unit file with cgroups, capabilies and seccomp filter
 See file 'heat.service' in the repository. Needed system calls can be found by strace.
 2. Reload the service file
-`systemctl daemon-reload`
+
+    ```sh
+    systemctl daemon-reload
+    ```
 3. Start the service
-`systemctl start heat.service`
+
+    ```sh
+    systemctl start heat.service
+    ```
 4. Enter mount namespace of pid
-'''
-eval `systemctl show -p ExecMainPID heat.service`
-nsenter -t $ExecMainPID -m
-ls /home /dev /tmp
-'''
+    ```sh
+    eval `systemctl show -p ExecMainPID heat.service`
+    nsenter -t $ExecMainPID -m
+    ls /home /dev /tmp
+    ```
 
 ## Other examples of containers in applications
 
-# Chrom(e/ium)
+### Chrom(e/ium)
 * each renderer of a web page is put in its own sandbox
 * reduces attack surface to system
 * user namespaces
 * seccomp-bpf 
 
-# Firefox
+### Firefox
 * same as for Chrome, but no seperate processes by default (switch on Electrolysis)
 
 # Gnome Sandbox
@@ -274,14 +282,10 @@ ls /home /dev /tmp
 * (k)dbus proxy filtering
 -> a lot like iOS/Android
 
-# lxc
+### lxc
 * all mentioned features configurable
 
-# SELinux
+## SELinux
 * can be combined with all mentioned separation methods
 * used with Docker on Centos/RHEL
 * proposal: talk about Docker security and SELinux
-
-## TODO
-1. Wrapper for capsetp
-2. Shell completion for capsh
