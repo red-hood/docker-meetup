@@ -2,28 +2,34 @@
 
 ## PID and mount namespaces
 
-## Prepare a busybox environment  
-`./create-busybox.sh`
+1. Prepare a busybox environment  
 
-## Show PID namespaces  
-Still old /proc mount  
-```sh
-sudo unshare -p -f /container/1/sh
-ps w
-cd /proc/self; pwd -P
-```
+    ```sh
+    ./create-busybox.sh`
+    ```
 
-Show process in root namespace  
-```sh
-ps -q <PID in root ns>  
-```
+2. Show PID namespaces  
+/proc mount is still the one from parent NS, can get PID there
 
-/proc mount in new process namespace  
-```sh
-chroot /container/1  
-mount -t proc  proc /proc  
-ps w  
-```
+    ```sh
+    sudo unshare -p -f /container/1/sh
+    ps w
+    cd /proc/self; pwd -P
+    ```
+
+3. Show process in root namespace  
+
+    ```sh
+    ps -q <PID in root ns>  
+    ```
+
+4. /proc mount in new process namespace  
+
+    ```sh
+    chroot /container/1  
+    mount -t proc  proc /proc  
+    ps w  
+    ```
 
 Do the same stuff in container 2, show which processes are visible where  
 
@@ -45,11 +51,11 @@ Do the same stuff in container 2, show which processes are visible where
     ```
 4. List mounts in root and container namespace
 
-```sh
-ls /proc in new namespace  
-ls /container/1/proc/ should be empty  
-```
-5. Example with shared root mount  
+    ```sh
+    ls /proc in new namespace  
+    ls /container/1/proc/ should be empty  
+    ```
+5. Example with shared root mount
 
 
 # Capabilities
@@ -57,60 +63,73 @@ ls /container/1/proc/ should be empty
 * restrict access to several permission (not dependent on implementation)
 * similar to permissions on Android or iOS
 
-# Example for Network Admin Capability
+## Example for Network Admin Capability in Docker
 
-We will shoe that the root user in a docker container can not bring its network device down
-1. Start docker  
-```sh
-docker run -t -i debian:jessie /bin/bash  
-```
-2. eth0 down
-```sh
-ip l s eth0 down
--> `RTNETLINK answers: Operation not permitted`
-```
+We will show that the root user in a docker container can not bring its network device down.
+
+1. Start docker container (Debian)
+
+    ```sh
+    docker run -t -i debian:jessie /bin/bash  
+    ```
+2. Try to bring eth0 down 
+    ```sh
+    ip l s eth0 down
+    -> `RTNETLINK answers: Operation not permitted`
+    ```
 3. Print current capabilities
-```sh
-capsh --print
--> cap_net_admin missing in Current set, therefore no access to network management functions 
-```
+    ```sh
+    capsh --print
+    -> cap_net_admin missing in Current set, therefore no access to network management functions 
+    ```
+4. Set capabilities for docker container
+TODO
 NB no limit to single syscall, but messages on netlink socket
 
-### Capabilities w/o Docker
 
+## Capabilities w/o Docker
+
+* capabilities are stored in extended file attributes: not user-specific, but related to executable
+* restrictions per user possible via inherited bounding set
+* examples for capabilites: cap_net_admin, cap_sys_admin (many in one), cap_net_bind_service
+* explain permissive, inheritable, effective and bounding set
+* explain securebits
 * capsh forks bash with a limited set of capabilities
-* TODO: explain permissive, inheritable, effective and bounding set
-* TODO: explain securebits
-* example for capabilites
 
-1. Show different output for root and normal user  
+1. Show different output for root and normal user, man page
 2. Remove cap_net_admin capability for root user
--> `capsh --secbits=1 --caps=all,cap_net_admin-eip --`  
--> `ip l s eth0 up`  
-RTNETLINK answers: Operation not permitted
+
+    ```sh
+    capsh --secbits=1 --caps=all,cap_net_admin-eip --
+    ip l s eth0 up
+    -> RTNETLINK answers: Operation not permitted
+    ```
 
 3. Grant normal users cap_net_admin
-
 * KEEP_CAPS works only once -> have to execve() iproute2 directly
--> `./capsh --keep=1 --uid=1000 --caps=all+eip  -- /usr/bin/touch /var/foo`
---> should work, but does not, strange...
+* we use a modified version of capsh that executes the last argument directly
 
-## Tools
+     ```sh
+    ./capsh --keep=1 --uid=1000 --caps=all+eip  -- /usr/bin/touch /var/foo
+    --> should work, but does not, strange...
+    ```
+
+## useful Tools (libcap-ng)
 * pscap gives a good overview of processes and their current capabilites
 * filecap list all files with special capabilities
 
-# seccomp
-### Strict mode
+# seccomp (Secure computing)
+## Strict mode (legacy)
 Filter all syscalls, except for read, write, \_exit and sigreturn  
 
 * only read or write to open file descriptors
 * no dynamic memory allocation possible, normal binaries won't work
 
 ### Filter mode: Filter syscalls and their arguments via BPF
-* filter on syscall no and its arguments
+* filter on syscall number and its arguments
 * uses the same filter framework as iptables  
 * used by many applications, e.g. Chrome and SSH
-* TODO write own example
+* best used by application it self (e.g. first has to open socket, then filter syscall to socket())
 
 Examples can be found in ssh source code, eg:
 
@@ -123,53 +142,98 @@ SC_ALLOW(gettimeofday),
 ...
 '''
 
-TODO Usernamespaces and capabilities
+TODO User Namespaces and capabilities
 TODO Example with network namespace and veth dev/special routing of packets from there
 
-# Cgroups
-* allow to limit resource usage for single processes
-* Subsystems
+## Cgroups
+* allow to limit resource usage for groups of processes attached to a cgroup
+* defines generic API for different subsystems that implement the actual resource control
 
-## Example:  limit memory
+### Subsystems
+* memory: limit process memory and buffers used by process in kernel
+* cpu: limit cpu quota (absolute usage) and cpu shares (like nice
+* blkio: limit IOPs and data rate (like ionice, eg used by libvirt)
+* freezer: freeze all processes in the group at once (suspend/resume container)
+
+### Example: limit memory
 Assume cgroups fs is mounted
 
 1. Create new group 
-`mkdir /sys/fs/cgroup/memory/memcg1`
-`cd /sys/fs/cgroup/memory/memcg1`  
+
+    ```sh
+    mkdir /sys/fs/cgroup/memory/memcg1
+    cd /sys/fs/cgroup/memory/memcg1
+    ```  
 2. Set limit in bytes:
-`echo 102400 > memory.limit_in_bytes`  
+
+    ```sh
+    echo 102400 > memory.limit_in_bytes
+    ```  
 3. Add our shell to cgroup
-`echo $$ > tasks`  
+
+    ```sh
+    echo $$ > tasks
+    ```  
 From here on, the shell and its children are not allowed to consume more than 10KB
 4. pwd still works (shell builtin)
-`pwd`
+
+    ```sh
+    pwd
+    ```
 5. But child is reaped
-`free -m`
--> Killed
+
+    ```sh
+    free -m
+    -> Killed
+    ```
 6. Show memory failcnt
-`cat /sys/fs/cgroup/memory/memcg1/memory.failcnt`  
+
+    ```sh
+    cat /sys/fs/cgroup/memory/memcg1/memory.failcnt
+    ```  
 7. Show kernel output
 
 ## Example: CPU shares and sets
 1. Create cpuset to bind on CPU core 1
-`mkdir /sys/fs/cgroup/cpuset/cpuset1`  
-`cd !$`
+
+    ```sh
+    mkdir /sys/fs/cgroup/cpuset/cpuset1
+    cd !$
+    ```
 2. Set cgroup to bind to CPU 1 and memory node 0 (non-NUMA)
-`echo 0 > cpuset.cpus`  
-`echo 0 > cpuset.mems`
+
+    ```sh
+    echo 0 > cpuset.cpus
+    echo 0 > cpuset.mems
+    ```
 3. Run two CPU-consuming taks
-`alias heat='dd if=/dev/zero of=/dev/null'`  
-`(heat & heat) &`  
+
+    ```sh
+    alias heat='dd if=/dev/zero of=/dev/null'
+    (heat & heat) &
+    ```  
 4. Show htop  
 Both processes are bound to same CPU, only using ~50% each
 5. Create group with quarter CPU share (1024 is default)
-`mkdir /sys/fs/cgroup/cpu/cpucg1`  
+
+    ```sh
+    mkdir /sys/fs/cgroup/cpu/cpucg1
+    ```  
 6. Set shares
-`echo 256 > /sys/fs/cgroup/cpu,cpuacct/cpucg1/cpu.shares`  
+
+    ```sh
+    echo 256 > /sys/fs/cgroup/cpu,cpuacct/cpucg1/cpu.shares
+    ```  
 7. Add our own shell to cgroup
-`echo $$ > tasks`  
+
+    ```sh
+    echo $$ > tasks
+    ```  
 8. Spawn another CPU heater
-`heat`  
+
+    ```sh
+    heat
+    ```  
 htop should show both tasks started first with 40%, the new one with about ~20% (why?). The new heater can be adjusted by writing to cpu.shares.
 
 # Lightweight containers with systemd
