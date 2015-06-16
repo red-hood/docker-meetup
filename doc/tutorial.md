@@ -14,25 +14,37 @@ cd /proc/self; pwd -P
 ```
 
 Show process in root namespace  
-`ps -q <PID in root ns>  
+```sh
+ps -q <PID in root ns>  
+```
 
 /proc mount in new process namespace  
-`chroot /container/1`  
-`mount -t proc  proc /proc`  
-`ps w`  
+```sh
+chroot /container/1  
+mount -t proc  proc /proc  
+ps w  
+```
 
 Do the same stuff in container 2, show which processes are visible where  
 
 ## Add mount namespaces  
 1. Make sure / is mounted private:  
-`sudo mount --make-private /`  
+```sh
+sudo mount --make-private /  
+```
 2. Create new mount and PID namespace:  
-`sudo unshare -p -m -f /container/1/sh` 
+```sh
+sudo unshare -p -m -f /container/1/sh 
+```
 3. Chroot and mount /proc  
-`chroot /container/1; mount -t proc  proc /proc`  
+```sh
+chroot /container/1; mount -t proc  proc /proc  
+```
 4. List mounts in root and container namespace  
-`ls /proc` in new namespace  
-`ls /container/1/proc/` should be empty  
+```sh
+ls /proc in new namespace  
+ls /container/1/proc/ should be empty  
+```
 5. Example with shared root mount  
 
 
@@ -45,12 +57,20 @@ Do the same stuff in container 2, show which processes are visible where
 
 We will shoe that the root user in a docker container can not bring its network device down
 1. Start docker  
-`docker run -t -i debian:jessie /bin/bash`  
+```sh
+docker run -t -i debian:jessie /bin/bash  
+```
 2. eth0 down
-`ip l s eth0 down`
+```sh
+ip l s eth0 down
 -> `RTNETLINK answers: Operation not permitted`
-3. capsh --print
--> cap_net_admin missing in Current set, therefore no access to network management functions (NB no limit to single syscall, but messages on netlink socket)
+```
+3. Print current capabilities
+```sh
+capsh --print
+-> cap_net_admin missing in Current set, therefore no access to network management functions 
+```
+NB no limit to single syscall, but messages on netlink socket
 
 ### Capabilities w/o Docker
 
