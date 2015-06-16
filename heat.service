@@ -1,0 +1,30 @@
+[Unit]
+Description=Example for resource limitation and security restriction with systemd
+
+[Unit]
+[Service]
+Type=simple
+ExecStart=/usr/bin/dd if=/dev/zero of=/dev/null
+CPUQuota=5%
+
+# empty capabilities bounding set, effectively running as unprivileged user
+CapabilityBoundingSet=
+
+# don't give root all capabilities
+SecureBits=noroot noroot-locked
+
+# do not expose system devices
+PrivateDevices=true
+
+# private /tmp and /var/tmp
+PrivateTmp=true
+
+# mount /usr/, /boot and /etc read-only
+ProtectSystem=full
+
+# make home appear to be empty
+ProtectHome=true
+
+# filter required system calls for dd
+SystemCallFilter=access arch_prctl brk close dup2 execve fstat gettid lseek mmap mprotect munmap open read rt_sigaction rt_sigprocmask rt_sigreturn tgkill write
+SystemCallErrorNumber=EACCES
